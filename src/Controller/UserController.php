@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 class UserController extends AbstractController
 {
     #[Route('/user', name: 'app_user')]
@@ -34,6 +36,16 @@ class UserController extends AbstractController
             return new JsonResponse('Identifiants invalides',400);
         }
 
-        return new JsonResponse('success',200);
+        $key = $this->getParameter('jwt_secret');
+        $payload = [
+            'lat' =>time(), 
+            'exp' =>time() + 3600, 
+            'roles' => $user->getRoles(),
+            'userid' => $user->getId(),
+        ];
+
+        $jwt = JWT::encode($payload, $key,'HS256');
+
+        return new JsonResponse($jwt,200);
     }
 }

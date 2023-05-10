@@ -7,6 +7,8 @@ use DateTime;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+use Symfony\Component\Validator\Constraints as Assert;
+
 #[ORM\Entity(repositoryClass: CommentRepository::class)]
 class Comment
 {
@@ -16,6 +18,13 @@ class Comment
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        min: 5,
+        max: 200,
+        minMessage: 'Le comment doit faire au moins 5 caractères',
+        maxMessage: 'Le comment doit faire au maximum 200 caractères',
+    )]
     private ?string $Comment = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]

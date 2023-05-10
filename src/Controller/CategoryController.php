@@ -11,6 +11,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+
 class CategoryController extends AbstractController
 {
     #[Route('/categories', name: 'app_category',methods:['GET'])]
@@ -23,23 +26,45 @@ class CategoryController extends AbstractController
     #[Route('/category', name: 'category_add',methods:['POST'])]
     public function add(Request $r, EntityManagerInterface $em, ValidatorInterface $v): Response
     {
-        $category = new Category();
-        $category->setTitle($r->get('title') );
-       
-        $errors = $v->validate($category);
-        if(count($errors) > 0){
-           
-            $e_list = [];
-            foreach($errors as $e){
-                $e_list = $e->getMessage();
-            }
-            return new JsonResponse($e_list, 400); 
-        }
-                
-        $em->persist($category);
-        $em->flush();
+        
+        $headers = $r->headers->all();
+        if(isset($headers['token']) && !empty($headers['token'])){
 
-        return new JsonResponse('success',201);
+            $jwt =current($headers['token']);
+            $key = $this->getParameter('jwt_secret');
+            try{
+                $decoded = JWT::decode($jwt, new Key($key, 'HS256'));
+
+            }
+            catch(\Exception $e){
+                return new JsonResponse($e->getMessage(),403);
+            }
+
+            if( $decoded->roles != null && in_array('ROLE_ADMIN',$decoded->roles)){
+
+                $category = new Category();
+                $category->setTitle($r->get('title') );
+               
+                $errors = $v->validate($category);
+                if(count($errors) > 0){
+                   
+                    $e_list = [];
+                    foreach($errors as $e){
+                        $e_list = $e->getMessage();
+                    }
+                    return new JsonResponse($e_list, 400); 
+                }
+                        
+                $em->persist($category);
+                $em->flush();
+
+                return new JsonResponse('success',201);
+
+            }
+
+        }
+        
+        return new JsonResponse('Access denied',403); 
     }
 
 
@@ -51,7 +76,7 @@ class CategoryController extends AbstractController
         $category = $em->getRepository(Category::class)->getCategoryWithArticles($id);
        
         if($category == null){
-            return new JsonResponse('Categorie introuveble',204); 
+            return new JsonResponse('Categorie introuveble',404); 
         }
         return new JsonResponse($category,200); 
     }
@@ -64,45 +89,86 @@ class CategoryController extends AbstractController
             return new JsonResponse('Categorie introuveble',204); 
         }
 
-        $params = 0;
-        if($r->get('title') != null){
-            $params++;
- 
-            $category->setTitle($r->get('title'));
-        }
+        $headers = $r->headers->all();
+        if(isset($headers['token']) && !empty($headers['token'])){
 
-        if($params > 0){
+            $jwt =current($headers['token']);
+            $key = $this->getParameter('jwt_secret');
+            try{
+                $decoded = JWT::decode($jwt, new Key($key, 'HS256'));
 
-            $errors = $v->validate($category);
-            if(count($errors) > 0){
-                
-                $e_list = [];
-                foreach($errors as $e){
-                    $e_list = $e->getMessage();
+            }
+            catch(\Exception $e){
+                return new JsonResponse($e->getMessage(),403);
+            }
+            if( $decoded->roles != null && in_array('ROLE_ADMIN',$decoded->roles)){
+
+                $params = 0;
+                if($r->get('title') != null){
+                    $params++;
+         
+                    $category->setTitle($r->get('title'));
                 }
-                return new JsonResponse($e_list, 400); 
+        
+                if($params > 0){
+        
+                    $errors = $v->validate($category);
+                    if(count($errors) > 0){
+                        
+                        $e_list = [];
+                        foreach($errors as $e){
+                            $e_list = $e->getMessage();
+                        }
+                        return new JsonResponse($e_list, 400); 
+                    }
+        
+                    $em->persist($category);
+                    $em->flush();
+        
+                }else{
+                    return new JsonResponse('Empty',201); 
+                }
+        
+                return new JsonResponse('success',201); 
             }
 
-            $em->persist($category);
-            $em->flush();
-
-        }else{
-            return new JsonResponse('Empty',201); 
         }
 
-        return new JsonResponse('success',201); 
+        return new JsonResponse('Access denied',403); 
+        
     }
 
     #[Route('/category/{id}', name: 'category_delete',methods:['DELETE'])]
-    public function delete(Category $category = null, EntityManagerInterface $em) : Response
+    public function delete(Category $category = null, Request $r, EntityManagerInterface $em) : Response
     {
             if($category == null){
                 return new JsonResponse('Categorie introvable','404');
             }
 
-            $em->remove($category);
-            $em->flush();
-            return new JsonResponse('Categorie suprimee',201);
+            $headers = $r->headers->all();
+
+            if(isset($headers['token']) && !empty($headers['token'])){
+
+                $jwt =current($headers['token']);
+                $key = $this->getParameter('jwt_secret');
+                try{
+                    $decoded = JWT::decode($jwt, new Key($key, 'HS256'));
+
+                }
+                catch(\Exception $e){
+                    return new JsonResponse($e->getMessage(),403);
+                }
+                if( $decoded->roles != null && in_array('ROLE_ADMIN',$decoded->roles)){
+
+                    $em->remove($category);
+                    $em->flush();
+                    return new JsonResponse('Categorie suprimee',201);
+                }
+
+            }
+
+            return new JsonResponse('Access denied',403); 
+            
     }
     
 

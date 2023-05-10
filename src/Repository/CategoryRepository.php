@@ -73,28 +73,33 @@ class CategoryRepository extends ServiceEntityRepository
             ;
 
             $articles = $this->createQueryBuilder('c')
-            ->select('a.id as id', 'a.title as title')
+            ->select('a.id as id', 'a.title as title', 'a.content as content','u.lastName as author')
             ->leftJoin('c.articles', 'a')
+            ->leftJoin('a.author', 'u')
             ->andWhere('c.id = :val')
             ->setParameter('val', $value)
             ->getQuery()
             ->getResult()
           ;
-                
-        $data = [
-            'id' => $category['id'],
-            'title' => $category['title'],
-        ];
-        
-        if($articles){
 
-            $data = [
-                'id' => $category['id'],
-                'title' => $category['title'],
-                'articles' => [$articles],
-            ];
+        $data=[];
 
-        }
+            if($category){
+
+                $data = [
+                    'id' => $category['id'],
+                    'title' => $category['title'],
+                ];
+
+                foreach ($articles as $article) {
+
+                    if($article['id']){
+                        $data['article'][] = $article;
+                    }
+                    
+                }
+
+            }
        
         return $data;
 

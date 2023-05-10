@@ -23,7 +23,10 @@ class RegistrationController extends AbstractController
         $user = new User();
 
         $user->setEmail($request->get('email'))
-            ->setPlainPassword($request->get('mdp'));
+            ->setPlainPassword($request->get('mdp'))
+            ->setLastName($request->get('nom'))
+            ->setFirstName($request->get('prenom'));
+            
         $isValid = $v->isValid($user);
 
         if($isValid !== true){

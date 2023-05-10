@@ -50,7 +50,7 @@ class ArticleRepository extends ServiceEntityRepository
 
     public function findOneById($value): array
     {
-        return $this->createQueryBuilder('a')
+        $article =  $this->createQueryBuilder('a')
             ->select('a.id', 'a.content','a.state','a.release_date','c.title as category','u.firstName as auther')
             ->leftJoin('a.category', 'c')
             ->leftJoin('a.author', 'u')
@@ -59,6 +59,56 @@ class ArticleRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult()
         ;
+
+                return  $article;
+
+    }
+
+    public function findCommentsByArticleId($value): array
+    {
+        $article =  $this->createQueryBuilder('a')
+            ->select('a.id', 'a.content','a.state','a.release_date','c.title as category','u.firstName as auther')
+            ->leftJoin('a.category', 'c')
+            ->leftJoin('a.author', 'u')
+            ->andWhere('a.id = :val')
+            ->setParameter('val', $value)
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+        
+        $comments = $this->createQueryBuilder('a')
+            ->select('c.id as id','c.Comment as comment','c.public_date as Date','u.firstName as auther')
+            ->leftJoin('a.comments', 'c')
+            ->leftJoin('c.author', 'u')
+            ->andWhere('a.id = :val')
+            ->setParameter('val', $value)
+            ->getQuery()
+            ->getResult();
+
+            $data=[];
+
+            if($article){
+
+                $data = [
+                    'id' => $article['id'],
+                    'content' => $article['content'],
+                    'state' => $article['state'],
+                    'release_date' => $article['release_date'],
+                    'category' => $article['category'],
+                    'auther' => $article['auther'],
+    
+                ];
+
+                foreach ($comments as $comment) {
+
+                    if($comment['id']){
+                        $data['comments'][] = $comment;
+                    }
+                    
+                }
+            }
+        return $data;
+
     }
 
 //    /**

@@ -39,6 +39,18 @@ class CommentRepository extends ServiceEntityRepository
         }
     }
 
+    public function findOneById($value): array
+    {
+        return $this->createQueryBuilder('c')
+            ->select('c.id', 'c.Comment','c.status','c.public_date','a.title as article','u.firstName as auther')
+            ->leftJoin('c.article', 'a')
+            ->leftJoin('c.author', 'u')
+            ->andWhere('c.id = :val')
+            ->setParameter('val', $value)
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+    }
 //    /**
 //     * @return Comment[] Returns an array of Comment objects
 //     */
